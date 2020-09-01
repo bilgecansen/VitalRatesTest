@@ -1,7 +1,4 @@
 
-# Summarize outputs from Demographic models (CJS-pop) 
-
-
 # Load packages and data --------------------------------------------------
 
 library(tidyverse)
@@ -55,6 +52,10 @@ estimate.avgR <- function(chains, wdata, time, pop) {
     
     for (t in 1:time) {
       
+      ## %*% is matrix multiplication
+      ## swchains is matrix of betas. Each column is a beta for a different variable.
+      ## Each row is a different of the mcmc chain (posterior distribution).
+      ## wdata[k,t,] is a vector where each element is a varible for population k and time t.
       s1 <- inv.logit(alpha1 + beta*(-1) + swchains %*% wdata[k,t,])
       s2 <- inv.logit(alpha2 + beta*(-1) + swchains %*% wdata[k,t,])
       fec <-  exp(theta + zeta*(-1) + fwchains %*% wdata[k,t,])
@@ -131,6 +132,7 @@ estimate.N <- function(p, chdata) {
   results$corr_N <- results$corr_Nad + results$corr_Njuv
   results$corr_D <- t(apply(results$corr_N, 1, function(x) x/mean(x, na.rm = T)))
   results$avgN <- apply(results$corr_N, 1, mean, na.rm = T)
+  results$highN <- apply(results$corr_N, 1, function(x) quantile(x, 0.95, na.rm = T))
   results$sdN <- apply(results$corr_N, 1, sd, na.rm = T)
   results$cvN <- results$sdN/results$avgN
   results$Nobs_juv <- Nobs_juv
@@ -184,6 +186,7 @@ N <- foreach(i=1:length(spcode), .options.snow = opts, .packages = "boot") %dopa
   
   results <- list()
   spN <- c()
+  highN <- matrix(nrow = nrow(chains), ncol = npop)
   matN <- matrix(nrow = nrow(chains), ncol = npop)
   
   for (h in 1:nrow(chains)) {
@@ -196,11 +199,17 @@ N <- foreach(i=1:length(spcode), .options.snow = opts, .packages = "boot") %dopa
     
     matN[h,] <- tempN$avgN/nstat_sp[[i]]
     spN[h] <- median(tempN$avgN/nstat_sp[[i]])
+    highN[h,] <- tempN$highN/nstat_sp[[i]]
 
   }
-  popN <- apply(matN, 2, mean)
   
-  results$popN <- popN
+  # Average abundance of each population
+  results$popN <- apply(matN, 2, mean)
+  
+  # 95% quantile of each population
+  results$highN <- apply(highN, 2, mean)
+  
+  # Posterior of species level median population abundance
   results$spN <- spN
 
   return(results)

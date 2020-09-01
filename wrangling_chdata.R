@@ -4,8 +4,8 @@
 # into a suitable format for Bayesian mark-recapture analysis with JAGS.
 
 # Loaded datasets (band_data, effort_data, midpoint_data, and weather_data) and functions 
-# introduced below were already created in a different study. See Şen and Akçakaya 2020 
-# for details about this data and fucntions used below.
+# introduced below were already created in a different study. See Şen and Akçakaya (in review) 
+# and https://github.com/bilgecansen/CJS-pop for details about this data and functions used below.
 
 
 # Set up directories, load packages and main datasets ---------------------

@@ -8,20 +8,18 @@ library(foreach)
 library(rjags)
 library(MCMCvis)
 library(ggthemes)
-library(sp)
 library(adehabitatHR)
-library(grid)
-library(geosphere)
+
+
 
 # Install with devtools::install_github("thomasp85/patchwork")
 library(patchwork)
 
-results_cjspop <- readRDS("results_cjspop.rds")
 results_dem <- readRDS("results_dem.rds")
 
 N <- results_dem$N
 nstat_sp <- results_dem$nstat_sp
-spcode <- results_cjspop$spcode
+spcode <- names(results_dem$R)
 
 R <- results_dem$R
 popR <- list()
@@ -335,7 +333,7 @@ g6 <- ggplot(mapping = aes(x = log(sum_nstat), y = log(spR))) +
 
 ggsave("paper_results/macro_fig2.tiff", width = 8, height = 8, units = "in")
 
-# Hypothesis 3: Population level R and K is positively correlated ---------
+# Hypothesis 3: Population level R and N is positively correlated ---------
 
 popN <- map(N, function(x) x$popN)
 
@@ -447,7 +445,7 @@ inits <- list(
   list(mu = c(5,2), sigma = c(5,1), rho = 0.4)
 )
 
-NvsB <- cor.jags(data = list(y = cbind(log(spN), beta), 
+NvsB <- cor.jags(data = list(y = cbind(log(spN), -beta), 
                              n = length(spN)),
                  inits = inits,
                  n.chains = 3,
@@ -466,15 +464,15 @@ MCMCtrace(NvsB$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
 MCMCtrace(NvsB$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.565" ~ "(0.153, 0.836)")
-my_grob1 <-  grid.text(my_text1, x=0.25,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "-0.565" ~ "(-0.836, -0.153)")
+my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=8))
 
 #qNlow <- map_dbl(Nchains, function(x) quantile(log(x$medianN), 0.25))
 #qNhigh <- map_dbl(Nchains, function(x) quantile(log(x$medianN), 0.75))
 #qBlow <- map_dbl(results_cjspop$mcmc_chains, function(x) quantile(x[,"beta"], 0.25))
 #qBhigh <- map_dbl(results_cjspop$mcmc_chains, function(x) quantile(x[,"beta"], 0.75))
 
-g9 <- ggplot(mapping = aes(x = log(spN), y = beta)) +
+g9 <- ggplot(mapping = aes(x = log(spN), y = -beta)) +
   geom_point() +
   #geom_errorbar(mapping = aes(ymin = qBlow, ymax = qBhigh), alpha = 0.5) +
   #geom_errorbarh(mapping = aes(xmin = qNlow, xmax = qNhigh), alpha = 0.5) +
@@ -483,11 +481,11 @@ g9 <- ggplot(mapping = aes(x = log(spN), y = beta)) +
        y = bquote(beta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  scale_y_continuous(breaks = seq(-0.75,0.5, 0.25), limits = c(-0.75,0.25)) +
+  scale_y_continuous(breaks = seq(-0.5,0.75, 0.25), limits = c(-0.25,0.75)) +
   annotation_custom(my_grob1) 
 
 # Population size vs DD in Fecundity
-NvsZ <- cor.jags(data = list(y = cbind(log(spN), zeta), 
+NvsZ <- cor.jags(data = list(y = cbind(log(spN), -zeta), 
                              n = length(spN)),
                  inits = inits,
                  n.chains = 3,
@@ -506,10 +504,10 @@ MCMCtrace(NvsZ$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
 MCMCtrace(NvsZ$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.307" ~ "(-0.695, 0.176)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "0.307" ~ "(-0.176, 0.695)")
+my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=8))
 
-g10 <- ggplot(mapping = aes(x = log(spN), y = zeta)) +
+g10 <- ggplot(mapping = aes(x = log(spN), y = -zeta)) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("N"))),
@@ -539,16 +537,17 @@ MCMCtrace(RvsB$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
 MCMCtrace(RvsB$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.542" ~ "(-0.816, -0.120)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "0.542" ~ "(0.120, 0.816)")
+my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=8))
 
-g11 <- ggplot(mapping = aes(x = log(spR), y = beta)) +
+g11 <- ggplot(mapping = aes(x = log(spR), y = -beta)) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("r"))),
        y = bquote(beta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
+  scale_y_continuous(breaks = seq(-0.5,0.75, 0.25), limits = c(-0.25,0.75)) +
   annotation_custom(my_grob1)
 
 # Population size vs DD in Fecundity
@@ -571,10 +570,10 @@ MCMCtrace(RvsZ$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
 MCMCtrace(RvsZ$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.128" ~ "(-0.355, 0.577)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "-0.128" ~ "(-0.577, 0.355)")
+my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=8))
 
-g12 <- ggplot(mapping = aes(x = log(spR), y = zeta)) +
+g12 <- ggplot(mapping = aes(x = log(spR), y = -zeta)) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("r"))),
@@ -687,7 +686,7 @@ tg6 <- ggplot(mapping = aes(x = log(spN)[index], y = log(spR)[index])) +
   annotation_custom(my_grob1) +
   annotation_custom(my_grob2)
 
-NvsB2 <- cor.jags(data = list(y = cbind(log(spN[index]), beta[index]), 
+NvsB2 <- cor.jags(data = list(y = cbind(log(spN[index]), -beta[index]), 
                              n = length(spN[index])),
                  inits = inits,
                  n.chains = 3,
@@ -700,10 +699,10 @@ NvsB2 <- cor.jags(data = list(y = cbind(log(spN[index]), beta[index]),
 NvsB2$mcmc_sum
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.450" ~ "(0.110, 0.822)")
-my_grob1 <-  grid.text(my_text1, x=0.25,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "-0.450" ~ "(-0.822, -0.110)")
+my_grob1 <-  grid.text(my_text1, x=0.25,  y=0.25, gp=gpar(col="orange", fontsize=8))
 
-tg7 <- ggplot(mapping = aes(x = log(spN)[index], y = beta[index])) +
+tg7 <- ggplot(mapping = aes(x = log(spN)[index], y = -beta[index])) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("N"))),
@@ -712,7 +711,7 @@ tg7 <- ggplot(mapping = aes(x = log(spN)[index], y = beta[index])) +
         axis.title.y = element_text(size = 12)) +
   annotation_custom(my_grob1)
 
-RvsB2 <- cor.jags(data = list(y = cbind(log(spR[index]), beta[index]), 
+RvsB2 <- cor.jags(data = list(y = cbind(log(spR[index]), -beta[index]), 
                              n = length(spR[index])),
                  inits = inits,
                  n.chains = 3,
@@ -727,10 +726,10 @@ rho <- MCMCchains(RvsB2$mcmc_samples, params = "rho")
 length(which(rho<0))/length(rho)
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.443" ~ "(-0.817, 0.124)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "0.443" ~ "(-0.124, 0.817)")
+my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.25, gp=gpar(col="orange", fontsize=8))
 
-tg8 <- ggplot(mapping = aes(x = log(spR)[index], y = beta[index])) +
+tg8 <- ggplot(mapping = aes(x = log(spR)[index], y = -beta[index])) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("r"))),
@@ -739,7 +738,7 @@ tg8 <- ggplot(mapping = aes(x = log(spR)[index], y = beta[index])) +
         axis.title.y = element_text(size = 12)) +
   annotation_custom(my_grob1)
 
-NvsZ2 <- cor.jags(data = list(y = cbind(log(spN[index]), zeta[index]), 
+NvsZ2 <- cor.jags(data = list(y = cbind(log(spN[index]), -zeta[index]), 
                              n = length(spN[index])),
                  inits = inits,
                  n.chains = 3,
@@ -752,10 +751,10 @@ NvsZ2 <- cor.jags(data = list(y = cbind(log(spN[index]), zeta[index]),
 NvsZ2$mcmc_sum
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.512" ~ "(-0.847, 0.018)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "0.512" ~ "(0.018, 0.847)")
+my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=8))
 
-tg9 <- ggplot(mapping = aes(x = log(spN)[index], y = zeta[index])) +
+tg9 <- ggplot(mapping = aes(x = log(spN)[index], y = -zeta[index])) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("N"))),
@@ -764,7 +763,7 @@ tg9 <- ggplot(mapping = aes(x = log(spN)[index], y = zeta[index])) +
         axis.title.y = element_text(size = 12)) +
   annotation_custom(my_grob1)
 
-RvsZ2 <- cor.jags(data = list(y = cbind(log(spR[index]), zeta[index]), 
+RvsZ2 <- cor.jags(data = list(y = cbind(log(spR[index]), -zeta[index]), 
                              n = length(spR[index])),
                  inits = inits,
                  n.chains = 3,
@@ -777,10 +776,10 @@ RvsZ2 <- cor.jags(data = list(y = cbind(log(spR[index]), zeta[index]),
 RvsZ2$mcmc_sum
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.135" ~ "(-0.430, 0.640)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=8))
+my_text1 <- bquote(rho ~ "=" ~ "-0.135" ~ "(-0.640, 0.430)")
+my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=8))
 
-tg10 <- ggplot(mapping = aes(x = log(spR[index]), y = zeta[index])) +
+tg10 <- ggplot(mapping = aes(x = log(spR[index]), y = -zeta[index])) +
   geom_point() +
   geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("r"))),
@@ -793,6 +792,19 @@ tg10 <- ggplot(mapping = aes(x = log(spR[index]), y = zeta[index])) +
   plot_annotation(tag_levels = 'a')
 
 ggsave("paper_results/test_figure2.tiff", width = 8, height = 8, units = "in")
+
+
+# DD comparison
+
+g11 <- ggplot(mapping = aes(x = beta, y = zeta)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F, color = "orange") +
+  labs(x = bquote(beta),
+       y = bquote(zeta)) + 
+  theme(axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 12))
+
+ggsave("paper_results/test_figure3.tiff", width = 6, height = 6, units = "in")
 
 
 # Additional analysis -----------------------------------------------------
@@ -826,6 +838,18 @@ RvsNpop2 <- cor.jags(data = list(y = cbind(log(spR[index2]), log(npop[index2])),
 RvsNpop2$mcmc_sum
 rho <- MCMCchains(RvsNpop2$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
+
+NvsRD <- cor.jags(data = list(y = cbind(log(spN), log(npop)/log(range)), 
+                                 n = length(spN)),
+                     inits = inits,
+                     n.chains = 3,
+                     n.adapt = 1000,
+                     n.update = 10000,
+                     n.iter = 5000,
+                     n.thin = 5,
+                     seed_no = 19)
+
+NvsRD$mcmc_sum
 
 
 # Tables ------------------------------------------------------------------
