@@ -68,7 +68,7 @@ pg2 <- ggplot(mapping = aes(x = log(vR))) +
 theme_set(theme_bw())
 pg1 / pg2 +
   plot_annotation(tag_levels = 'a')
-ggsave("paper_results/macro_fig1.tiff", width = 4, height = 6, units = "in")
+ggsave("paper_results/macro_figS1.tiff", width = 4, height = 6, units = "in")
 
 
 # Hypothesis 1 and 2: Range is positively correlated witk K and R ---------
@@ -331,7 +331,7 @@ g6 <- ggplot(mapping = aes(x = log(sum_nstat), y = log(spR))) +
 (g1 + g2) / (g3 + g4) / (g5 + g6) +
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/macro_fig2.tiff", width = 8, height = 8, units = "in")
+ggsave("paper_results/macro_fig1.tiff", width = 8, height = 8, units = "in")
 
 # Hypothesis 3: Population level R and N is positively correlated ---------
 
@@ -386,7 +386,7 @@ g7 <- ggplot() +
   coord_flip()
 
 g7
-ggsave("paper_results/macro_fig3.tiff", width = 6, height = 6, units = "in")
+ggsave("paper_results/macro_fig2.tiff", width = 6, height = 6, units = "in")
 
 # Hypothesis 4: Is avgR correlated with K? ---------------------------
 
@@ -427,7 +427,7 @@ g8 <- ggplot(mapping = aes(x = log(spN), y = log(spR))) +
   annotation_custom(my_grob2)
 
 g8
-ggsave("paper_results/macro_fig4.tiff", width = 6, height = 6, units = "in")
+ggsave("paper_results/macro_fig3.tiff", width = 6, height = 6, units = "in")
 
 
 # DD plots ----------------------------------------------------------------
@@ -585,7 +585,7 @@ g12 <- ggplot(mapping = aes(x = log(spR), y = -zeta)) +
 (g9 + g10) / (g11 + g12) +
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/macro_fig5.tiff", width = 8, height = 6, units = "in")
+ggsave("paper_results/macro_fig4.tiff", width = 8, height = 6, units = "in")
 
 
 # Explorations statistical patterns ---------------------------------------
@@ -621,7 +621,7 @@ tg4 <- ggplot(mapping = aes(x = 1-(1-pjuv)^4, y = log(spR))) +
 (tg1 + tg2) / (tg3 + tg4) +
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/test_figure1.tiff", width = 8, height = 8, units = "in")
+ggsave("paper_results/macro_figureS2.tiff", width = 8, height = 8, units = "in")
 
 # Patterns when low cp species are removed
 index <- which(1-(1-pjuv)^4 >=0.05)
@@ -791,20 +791,7 @@ tg10 <- ggplot(mapping = aes(x = log(spR[index]), y = -zeta[index])) +
 (tg5 + tg6) / (tg7 + tg8) / (tg9 + tg10) +
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/test_figure2.tiff", width = 8, height = 8, units = "in")
-
-
-# DD comparison
-
-g11 <- ggplot(mapping = aes(x = beta, y = zeta)) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
-  labs(x = bquote(beta),
-       y = bquote(zeta)) + 
-  theme(axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 12))
-
-ggsave("paper_results/test_figure3.tiff", width = 6, height = 6, units = "in")
+ggsave("paper_results/macro_figureS3.tiff", width = 8, height = 8, units = "in")
 
 
 # Additional analysis -----------------------------------------------------
