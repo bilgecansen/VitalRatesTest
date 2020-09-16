@@ -9,6 +9,7 @@ library(rjags)
 library(MCMCvis)
 library(ggthemes)
 library(adehabitatHR)
+library(geosphere)
 
 
 
@@ -16,11 +17,17 @@ library(adehabitatHR)
 library(patchwork)
 
 results_dem <- readRDS("results_dem.rds")
+station_coord <- readRDS("station_coord.rds")
 
 N <- results_dem$N
 nstat_sp <- results_dem$nstat_sp
 spcode <- names(results_dem$R)
+npop <- results_dem$npop
+effort_year <- results_dem$effort_year
+mcmc_sum <- results_dem$mcmc_sum
 
+# Calculate average intrinsic growth rate of each population
+# using only years with capture effort
 R <- results_dem$R
 popR <- list()
 for (i in 1:17) {
@@ -28,7 +35,7 @@ for (i in 1:17) {
   tempR <- c()
   for (h in 1:nrow(R[[i]]$R)) {
     
-    index <- which(results_cjspop$chdata[[i]]$effort_year[h,]>0)
+    index <- which(effort_year[[i]][h,]>0)
     y <- R[[i]]$R[h,index]
     tempR[h] <- prod(y)^(1/length(y))
     
@@ -176,8 +183,6 @@ g2 <- ggplot(mapping = aes(x = log(range), y = log(spR))) +
   annotation_custom(my_grob2)
 
 # N vs Number of Populations
-npop <- map_dbl(results_cjspop$chdata, function(x) x$npop)
-
 NvsNpop <- cor.jags(data = list(y = cbind(log(spN), log(npop)), 
                                 n = length(spN)),
                     inits = inits,
@@ -432,11 +437,11 @@ ggsave("paper_results/macro_fig3.tiff", width = 6, height = 6, units = "in")
 
 # DD plots ----------------------------------------------------------------
 
-beta <- map_dbl(results_cjspop$mcmc_sum, function(x) x["beta",1])
-zeta <- map_dbl(results_cjspop$mcmc_sum, function(x) x["zeta",1])
-sad <- map_dbl(results_cjspop$mcmc_sum, function(x) x["survival_ad",1])
-sjuv <- map_dbl(results_cjspop$mcmc_sum, function(x) x["survival_juv",1])
-fec <- map_dbl(results_cjspop$mcmc_sum, function(x) x["fecundity",1])
+beta <- map_dbl(mcmc_sum, function(x) x["beta",1])
+zeta <- map_dbl(mcmc_sum, function(x) x["zeta",1])
+sad <- map_dbl(mcmc_sum, function(x) x["survival_ad",1])
+sjuv <- map_dbl(mcmc_sum, function(x) x["survival_juv",1])
+fec <- map_dbl(mcmc_sum, function(x) x["fecundity",1])
 
 # Population size vs DD in Survival
 inits <- list(
@@ -590,8 +595,8 @@ ggsave("paper_results/macro_fig4.tiff", width = 8, height = 6, units = "in")
 
 # Explorations statistical patterns ---------------------------------------
 
-pad <- map_dbl(results_cjspop$mcmc_sum, function(x) inv.logit(x["gamma[2]",1]))
-pjuv <- map_dbl(results_cjspop$mcmc_sum, function(x) inv.logit(x["gamma[1]",1]))
+pad <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[2]",1]))
+pjuv <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[1]",1]))
 
 # Capture probability vs N and R
 tg1 <- ggplot(mapping = aes(x = 1-(1-pad)^4, y = log(spN))) +
@@ -841,21 +846,21 @@ NvsRD$mcmc_sum
 
 # Tables ------------------------------------------------------------------
 
-beta_low <- map_dbl(results_cjspop$mcmc_sum, function(x) x["beta",3])
-zeta_low <- map_dbl(results_cjspop$mcmc_sum, function(x) x["zeta",3])
-sad_low <- map_dbl(results_cjspop$mcmc_sum, function(x) x["survival_ad",3])
-sjuv_low <- map_dbl(results_cjspop$mcmc_sum, function(x) x["survival_juv",3])
-fec_low <- map_dbl(results_cjspop$mcmc_sum, function(x) x["fecundity",3])
-pad_low <- map_dbl(results_cjspop$mcmc_sum, function(x) inv.logit(x["gamma[2]",3]))
-pjuv_low <- map_dbl(results_cjspop$mcmc_sum, function(x) inv.logit(x["gamma[1]",3]))
+beta_low <- map_dbl(mcmc_sum, function(x) x["beta",3])
+zeta_low <- map_dbl(mcmc_sum, function(x) x["zeta",3])
+sad_low <- map_dbl(mcmc_sum, function(x) x["survival_ad",3])
+sjuv_low <- map_dbl(mcmc_sum, function(x) x["survival_juv",3])
+fec_low <- map_dbl(mcmc_sum, function(x) x["fecundity",3])
+pad_low <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[2]",3]))
+pjuv_low <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[1]",3]))
 
-beta_high <- map_dbl(results_cjspop$mcmc_sum, function(x) x["beta",5])
-zeta_high <- map_dbl(results_cjspop$mcmc_sum, function(x) x["zeta",5])
-sad_high <- map_dbl(results_cjspop$mcmc_sum, function(x) x["survival_ad",5])
-sjuv_high <- map_dbl(results_cjspop$mcmc_sum, function(x) x["survival_juv",5])
-fec_high <- map_dbl(results_cjspop$mcmc_sum, function(x) x["fecundity",5])
-pad_high <- map_dbl(results_cjspop$mcmc_sum, function(x) inv.logit(x["gamma[2]",5]))
-pjuv_high <- map_dbl(results_cjspop$mcmc_sum, function(x) inv.logit(x["gamma[1]",5]))
+beta_high <- map_dbl(mcmc_sum, function(x) x["beta",5])
+zeta_high <- map_dbl(mcmc_sum, function(x) x["zeta",5])
+sad_high <- map_dbl(mcmc_sum, function(x) x["survival_ad",5])
+sjuv_high <- map_dbl(mcmc_sum, function(x) x["survival_juv",5])
+fec_high <- map_dbl(mcmc_sum, function(x) x["fecundity",5])
+pad_high <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[2]",5]))
+pjuv_high <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[1]",5]))
 
 fun_paste <- function(x,low,high) {
   

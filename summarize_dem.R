@@ -17,6 +17,7 @@ chdata <- results_cjspop$chdata
 spcode <- results_cjspop$spcode
 
 
+
 # Functions ---------------------------------------------------------------
 
 prep.wdata <- function(chdata) {
@@ -221,6 +222,9 @@ names(N) <- spcode
 results_dem <- list()
 results_dem$R <- R
 results_dem$N <- N
+results_dem$mcmc_sum <- mcmc_sum
+results_dem$npop <- map_dbl(chdata, function(x) x$npop)
+results_dem$effort_year <- map(chdata, function(x) x$effort_year)
 results_dem$nstat_sp <- nstat_sp
 
 saveRDS(results_dem, "results_dem.rds")
