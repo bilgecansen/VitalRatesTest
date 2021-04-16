@@ -52,7 +52,8 @@ lm.jags <- function(data, inits, n.chains, n.adapt,
                           data = data,
                           inits = inits,
                           n.chains = n.chains, 
-                          n.adapt = n.adapt)
+                          n.adapt = n.adapt,
+                          quiet = T)
   
   update(jm, n.iter = n.update)
   
@@ -174,7 +175,8 @@ beta.lm.jags <- function(data, inits, n.chains, n.adapt,
                           data = data,
                           inits = inits,
                           n.chains = n.chains, 
-                          n.adapt = n.adapt)
+                          n.adapt = n.adapt,
+                          quiet = T)
   
   update(jm, n.iter = n.update)
   
