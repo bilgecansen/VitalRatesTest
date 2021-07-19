@@ -11,6 +11,8 @@ library(ggthemes)
 library(adehabitatHR)
 library(geosphere)
 library(grid)
+library(BayesFactor)
+library(ggrepel)
 
 # Install with devtools::install_github("thomasp85/patchwork")
 library(patchwork)
@@ -118,31 +120,27 @@ NvsRange <- cor.jags(data = list(y = cbind(log(spN), log(range)),
 NvsRange$mcmc_sum
 rho <- MCMCchains(NvsRange$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
-
-## Check prior posterior overlap
-mu_prior <- rnorm(15000, 0,10)
-sigma_prior <- runif(15000, 0, 100)
-rho_prior <- runif(15000, -1, 1)
-MCMCtrace(NvsRange$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(NvsRange$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(NvsRange$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(log(spN), log(range), rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.01" ~ "(-0.46, 0.47)")
-my_grob1 <-  grid.text(my_text1, x=0.15,  y=0.9, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.52")
-my_grob2 <-  grid.text(my_text2, x=0.15,  y=0.8, gp=gpar(col="orange", fontsize=10))
-
+my_text1a <- bquote(rho == 0.06 ~ "(-0.41, 0.52)")
+my_grob1a <-  grid.text(my_text1a, x = 0.05, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text1b <- bquote("P("*rho*">0)" ~ "=" ~ "0.52")
+my_grob1b <-  grid.text(my_text1b, x=0.05,  y=0.80, gp=gpar(col="orange", fontsize = 10), just = "left")
+my_text1c <- my_text1c <- bquote(B[0] == 0.40)
+my_grob1c <-  grid.text(my_text1c, x=0.05,  y=0.70, gp=gpar(col="orange", fontsize = 10), just = "left")
 
 g1 <- ggplot(mapping = aes(x = log(range), log(spN))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) + 
   labs(x = "Geographic Extent",
        y = bquote(bar(bar("N")))) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1) +
-  annotation_custom(my_grob2)
+  annotation_custom(my_grob1a) +
+  annotation_custom(my_grob1b) +
+  annotation_custom(my_grob1c)
+  
 
 # N vs Number of Populations
 NvsNpop <- cor.jags(data = list(y = cbind(log(spN), log(npop)), 
@@ -158,41 +156,39 @@ NvsNpop <- cor.jags(data = list(y = cbind(log(spN), log(npop)),
 NvsNpop$mcmc_sum
 rho <- MCMCchains(NvsNpop$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
-
-## Check prior posterior overlap
-MCMCtrace(NvsNpop$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(NvsNpop$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(NvsNpop$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(log(spN), log(npop), rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.26" ~ "(-0.23, 0.66)")
-my_grob1 <-  grid.text(my_text1, x=0.15,  y=0.9, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.86")
-my_grob2 <-  grid.text(my_text2, x=0.15,  y=0.80, gp=gpar(col="orange", fontsize=10))
-
+my_text2a <- bquote(rho == 0.26 ~ "(-0.20, 0.68)")
+my_grob2a <-  grid.text(my_text2a, x = 0.05, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text2b <- bquote("P("*rho*">0)" ~ "=" ~ "0.87")
+my_grob2b <-  grid.text(my_text2b, x=0.05,  y = 0.80, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text2c <- my_text2c <- bquote(B[0] == 0.71)
+my_grob2c <-  grid.text(my_text2c, x=0.05,  y=0.70, gp=gpar(col="orange", fontsize = 10), just = "left")
 
 g2 <- ggplot(mapping = aes(x = log(npop), log(spN))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) + 
   labs(x = "Number of Populations",
        y = bquote(bar(bar("N")))) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1) +
-  annotation_custom(my_grob2)
+  annotation_custom(my_grob2a) + 
+  annotation_custom(my_grob2b) +
+  annotation_custom(my_grob2c)
 
 g1 / g2 + 
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/macro_fig1.jpeg", width = 6, height = 8, units = "in")
+ggsave("paper_results/macro_fig2.jpeg", width = 8, height = 8, units = "in")
 
 
 # Relationship between r and occupancy ------------------------------------
 
 # R vs Range
-spR <- map_dbl(popR, median)
+spR <- map_dbl(popR, function(x) median(log(x)))
 
-RvsRange <- cor.jags(data = list(y = cbind(log(spR), log(range)), 
+RvsRange <- cor.jags(data = list(y = cbind(spR, log(range)), 
                                  n = length(spR)),
                      inits = inits,
                      n.chains = 3,
@@ -205,33 +201,29 @@ RvsRange <- cor.jags(data = list(y = cbind(log(spR), log(range)),
 RvsRange$mcmc_sum
 rho <- MCMCchains(RvsRange$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
-
-## Check prior posterior overlap
-MCMCtrace(RvsRange$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(RvsRange$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(RvsRange$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(spR, log(range), rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.13" ~ "(-0.37, 0.57)")
-my_grob1 <-  grid.text(my_text1, x=0.15,  y=0.90, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.70")
-my_grob2 <-  grid.text(my_text2, x=0.15,  y=0.80, gp=gpar(col="orange", fontsize=10))
+my_text3a <- bquote(rho == 0.13 ~ "(-0.34, 0.59)")
+my_grob3a <-  grid.text(my_text3a, x = 0.05, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text3b <- bquote("P("*rho*">0)" ~ "=" ~ "0.71")
+my_grob3b <-  grid.text(my_text3b, x=0.05,  y = 0.80, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text3c <- my_text3c <- bquote(B[0] == 0.46)
+my_grob3c <-  grid.text(my_text3c, x=0.05,  y = 0.70, gp=gpar(col="orange", fontsize = 10), just = "left")
 
-
-g3 <- ggplot(mapping = aes(x = log(range), y = log(spR))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+g3 <- ggplot(mapping = aes(x = log(range), y = spR)) +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) + 
   labs(x = "Geographic Extent",
        y = bquote(bar(bar("r")))) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1) +
-  annotation_custom(my_grob2)
-
-
+  annotation_custom(my_grob3a) +
+  annotation_custom(my_grob3b) +
+  annotation_custom(my_grob3c)
 
 # R vs Number of Populations
-RvsNpop <- cor.jags(data = list(y = cbind(log(spR), log(npop)), 
+RvsNpop <- cor.jags(data = list(y = cbind(spR, log(npop)), 
                                 n = length(spR)),
                     inits = inits,
                     n.chains = 3,
@@ -244,33 +236,29 @@ RvsNpop <- cor.jags(data = list(y = cbind(log(spR), log(npop)),
 RvsNpop$mcmc_sum
 rho <- MCMCchains(RvsNpop$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
-
-## Check prior posterior overlap
-MCMCtrace(RvsNpop$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(RvsNpop$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(RvsNpop$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(spR, log(npop), rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.10" ~ "(-0.55, 0.38)")
-my_grob1 <-  grid.text(my_text1, x=0.8,  y=0.90, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.35")
-my_grob2 <-  grid.text(my_text2, x=0.8,  y=0.80, gp=gpar(col="orange", fontsize=10))
+my_text4a <- bquote(rho == -0.10 ~ "(-0.54, 0.38)")
+my_grob4a <-  grid.text(my_text4a, x = 0.05, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text4b <- bquote("P("*rho*">0)" ~ "=" ~ "0.34")
+my_grob4b <-  grid.text(my_text3b, x = 0.05,  y = 0.8, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text4c <- my_text4c <- bquote(B[0] == 0.43)
+my_grob4c <-  grid.text(my_text4c, x=0.05,  y = 0.70, gp=gpar(col="orange", fontsize = 10), just = "left")
 
-
-g4 <- ggplot(mapping = aes(x = log(npop), y = log(spR))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+g4 <- ggplot(mapping = aes(x = log(npop), y = spR)) +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +  
   labs(x = "Number of Populations",
        y = bquote(bar(bar("r")))) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1) +
-  annotation_custom(my_grob2)
+  annotation_custom(my_grob4a) +
+  annotation_custom(my_grob4b) +
+  annotation_custom(my_grob4c)
 
-g3 / g4 +
-  plot_annotation(tag_levels = 'a')
-
-ggsave("paper_results/macro_fig2.jpeg", width = 6, height = 8, units = "in")
+g3 / g4 
+ggsave("paper_results/macro_fig3.jpeg", width = 8, height = 8, units = "in")
 
 
 # Relationship between r and N --------------------------------------------
@@ -308,15 +296,18 @@ rho_median <- data.frame(rho_med = map_dbl(rho_chains, median),
 rho_50 <- data.frame(rho_min = map_dbl(rho_chains, function(x) quantile(x, 0.25)),
                      rho_max = map_dbl(rho_chains, function(x) quantile(x, 0.75)),
                      species = spcode)
-rho_90 <- data.frame(rho_min = map_dbl(rho_chains, function(x) quantile(x, 0.05)),
-                     rho_max = map_dbl(rho_chains, function(x) quantile(x, 0.95)),
+rho_90 <- data.frame(rho_min = map_dbl(rho_chains, function(x) quantile(x, 0.025)),
+                     rho_max = map_dbl(rho_chains, function(x) quantile(x, 0.975)),
                      species = spcode)
 
-
+bf <- map(cor_bf, function(x) round(exp(x@bayesFactor$bf), 1))
+bf[[13]] <- ">100"
+  
 g7 <- ggplot() +
   geom_linerange(data = rho_50, aes(x = spcode, ymin = rho_min, ymax = rho_max), size = 0.9, alpha = 0.8) +
   geom_errorbar(data = rho_90, aes(x = spcode, ymin = rho_min, ymax = rho_max), alpha = 0.5) +
   geom_point(data = rho_median, aes(x = species, y = rho_med), col = "orange", size = 1) +
+  geom_text(mapping = aes(x = spcode, y = -0.75, label = bf), size = 3) +
   labs(y = bquote("Correlation" * "  \u2013  " * bar("r") * " vs " * bar("N"))) +
   geom_hline(yintercept = 0, col = "orange", alpha = 0.4) +
   theme(axis.title.y = element_blank(),
@@ -326,13 +317,13 @@ g7 <- ggplot() +
   coord_flip()
 
 g7
-ggsave("paper_results/macro_fig3.jpeg", width = 6, height = 6, units = "in")
+ggsave("paper_results/macro_fig4.jpeg", width = 6, height = 6, units = "in")
 
 
 # Variability in DD strength ----------------------------------------------
 
 # species level r vs species level N
-RvsN_sp <- cor.jags(data = list(y = cbind(log(spR), log(spN)), 
+RvsN_sp <- cor.jags(data = list(y = cbind(spR, log(spN)), 
                                      n = length(spR)),
                         inits = inits,
                         n.chains = 3,
@@ -345,32 +336,36 @@ RvsN_sp <- cor.jags(data = list(y = cbind(log(spR), log(spN)),
 RvsN_sp$mcmc_sum
 rho <- MCMCchains(RvsN_sp$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
-
-## Check prior posterior overlap
-MCMCtrace(RvsN_sp$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(RvsN_sp$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(RvsN_sp$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(log(spN), spR, rscale = "wide")
+correlationBF(log(spN), spR, rscale = "wide", nullInterval = c(-0.5, 1))
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.51" ~ "(-0.81, -0.08)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.01")
-my_grob2 <-  grid.text(my_text2, x=0.75,  y=0.85, gp=gpar(col="orange", fontsize=10))
+my_text5a <- bquote(rho == -0.51 ~ "(-0.84, -0.14)")
+my_grob5a <-  grid.text(my_text5a, x = 0.7, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text5b <- bquote("P("*rho*">0)" ~ "=" ~ "0.01")
+my_grob5b <-  grid.text(my_text5b, x = 0.7,  y = 0.85, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text5c <- bquote(B[0] == 4.68)
+my_grob5c <-  grid.text(my_text5c, x = 0.7, y = 0.80, gp = gpar(col="orange", fontsize = 10), just = "left")
+#my_text5d <- bquote(B[i] == 3.1)
+#my_grob5d <-  grid.text(my_text5d, x = 0.7, y = 0.75, gp = gpar(col="orange", fontsize = 10), just = "left")
 
-
-g8 <- ggplot(mapping = aes(x = log(spN), y = log(spR))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+g8 <- ggplot(mapping = aes(x = log(spN), y = spR)) +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +   
   labs(x = bquote(bar(bar("N"))),
        y = bquote(bar(bar("r")))) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1) +
-  annotation_custom(my_grob2)
+  annotation_custom(my_grob5a) +
+  annotation_custom(my_grob5b) +
+  annotation_custom(my_grob5c) #+
+  #annotation_custom(my_grob5d)
 
 g8
-ggsave("paper_results/macro_fig4.jpeg", width = 6, height = 6, units = "in")
+ggsave("paper_results/macro_fig5.jpeg", width = 6, height = 6, units = "in")
 
+dd <- round(spR/spN, 4)
+sd(dd)/mean(dd)
 
 # DD plots ----------------------------------------------------------------
 
@@ -398,15 +393,16 @@ NvsB <- cor.jags(data = list(y = cbind(log(spN), -beta),
                  seed_no = 19)
 
 NvsB$mcmc_sum
-
-## Check prior posterior overlap
-MCMCtrace(NvsB$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(NvsB$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(NvsB$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(log(spN), -beta, rscale = "wide")
+#correlationBF(log(spN), -beta, rscale = "wide", nullInterval = c(-0.3, 0.3))
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.57" ~ "(-0.84, -0.15)")
-my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=10))
+my_text6a <- bquote(rho == -0.57 ~ "(-0.86, -0.21)")
+my_grob6a <-  grid.text(my_text6a, x = 0.7, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text6b <- bquote(B[0] == 9.09)
+my_grob6b <-  grid.text(my_text6b, x = 0.7, y = 0.85, gp = gpar(col="orange", fontsize = 10), just = "left")
+#my_text6c <- bquote(B[i] == 5.42)
+#my_grob6c <-  grid.text(my_text6c, x = 0.7, y = 0.80, gp = gpar(col="orange", fontsize = 8), just = "left")
 
 #qNlow <- map_dbl(Nchains, function(x) quantile(log(x$medianN), 0.25))
 #qNhigh <- map_dbl(Nchains, function(x) quantile(log(x$medianN), 0.75))
@@ -414,16 +410,18 @@ my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=
 #qBhigh <- map_dbl(results_cjspop$mcmc_chains, function(x) quantile(x[,"beta"], 0.75))
 
 g9 <- ggplot(mapping = aes(x = log(spN), y = -beta)) +
-  geom_point() +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) + 
   #geom_errorbar(mapping = aes(ymin = qBlow, ymax = qBhigh), alpha = 0.5) +
   #geom_errorbarh(mapping = aes(xmin = qNlow, xmax = qNhigh), alpha = 0.5) +
-  geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = bquote(bar(bar("N"))),
        y = bquote(beta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
   scale_y_continuous(breaks = seq(-0.5,0.75, 0.25), limits = c(-0.25,0.75)) +
-  annotation_custom(my_grob1) 
+  annotation_custom(my_grob6a) +
+  annotation_custom(my_grob6b) #+
+  #annotation_custom(my_grob6c)
 
 # Population size vs DD in Fecundity
 NvsZ <- cor.jags(data = list(y = cbind(log(spN), -zeta), 
@@ -437,28 +435,26 @@ NvsZ <- cor.jags(data = list(y = cbind(log(spN), -zeta),
                  seed_no = 19)
 
 NvsZ$mcmc_sum
-rho <- MCMCchains(NvsZ$mcmc_samples, params = "rho")
-
-## Check prior posterior overlap
-MCMCtrace(NvsZ$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(NvsZ$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(NvsZ$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(log(spN), -zeta, rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.31" ~ "(-0.18, 0.70)")
-my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=10))
+my_text7a <- bquote(rho == 0.30 ~ "(-0.15, -0.71)")
+my_grob7a <-  grid.text(my_text7a, x = 0.05, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text7b <- bquote(B[0] == 0.9)
+my_grob7b <-  grid.text(my_text7b, x = 0.05, y = 0.85, gp = gpar(col="orange", fontsize = 10), just = "left")
 
 g10 <- ggplot(mapping = aes(x = log(spN), y = -zeta)) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) + 
   labs(x = bquote(bar(bar("N"))),
        y = bquote(zeta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1)
+  annotation_custom(my_grob7a) +
+  annotation_custom(my_grob7b)
 
 # Growth rate vs DD in Survival
-RvsB <- cor.jags(data = list(y = cbind(log(spR), beta), 
+RvsB <- cor.jags(data = list(y = cbind(log(spR), -beta), 
                              n = length(spR)),
                  inits = inits,
                  n.chains = 3,
@@ -469,28 +465,31 @@ RvsB <- cor.jags(data = list(y = cbind(log(spR), beta),
                  seed_no = 19)
 
 RvsB$mcmc_sum
-
-## Check prior posterior overlap
-MCMCtrace(RvsB$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(RvsB$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(RvsB$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(spR, -beta, rscale = "wide")
+#correlationBF(spR, -beta, rscale = "wide", nullInterval = c(-0.3, 0.3))
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.54" ~ "(0.12, 0.82)")
-my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=10))
+my_text8a <- bquote(rho == -0.53 ~ "(0.17, 0.85)")
+my_grob8a <-  grid.text(my_text8a, x = 0.05, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text8b <- bquote(B[0] == 7.18)
+my_grob8b <-  grid.text(my_text8b, x = 0.05, y = 0.85, gp = gpar(col="orange", fontsize = 10), just = "left")
+#my_text8c <- bquote(B[i] == 4.45)
+#my_grob8c <-  grid.text(my_text8c, x = 0.05, y = 0.80, gp = gpar(col="orange", fontsize = 8), just = "left")
 
 g11 <- ggplot(mapping = aes(x = log(spR), y = -beta)) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +
   labs(x = bquote(bar(bar("r"))),
        y = bquote(beta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
   scale_y_continuous(breaks = seq(-0.5,0.75, 0.25), limits = c(-0.25,0.75)) +
-  annotation_custom(my_grob1)
+  annotation_custom(my_grob8a) +
+  annotation_custom(my_grob8b) #+
+  #annotation_custom(my_grob8c)
 
 # Population size vs DD in Fecundity
-RvsZ <- cor.jags(data = list(y = cbind(log(spR), zeta), 
+RvsZ <- cor.jags(data = list(y = cbind(log(spR), -zeta), 
                              n = length(spR)),
                  inits = inits,
                  n.chains = 3,
@@ -501,29 +500,28 @@ RvsZ <- cor.jags(data = list(y = cbind(log(spR), zeta),
                  seed_no = 19)
 
 RvsZ$mcmc_sum
-
-## Check prior posterior overlap
-MCMCtrace(RvsZ$mcmc_samples, params = "mu", prior = mu_prior, pdf = F)
-MCMCtrace(RvsZ$mcmc_samples, params = "sigma", prior = sigma_prior, pdf = F)
-MCMCtrace(RvsZ$mcmc_samples, params = "rho", prior = rho_prior, pdf = F)
+correlationBF(spR, -zeta, rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.13" ~ "(-0.58, 0.36)")
-my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=10))
+my_text9a <- bquote(rho == -0.14 ~ "(-0.59, 0.32)")
+my_grob9a <-  grid.text(my_text9a, x = 0.5, y = 0.95, gp = gpar(col="orange", fontsize = 10), just = "left")
+my_text9b <- bquote(B[0] == 0.46)
+my_grob9b <-  grid.text(my_text9b, x = 0.5, y = 0.9, gp = gpar(col="orange", fontsize = 10), just = "left")
 
 g12 <- ggplot(mapping = aes(x = log(spR), y = -zeta)) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +
   labs(x = bquote(bar(bar("r"))),
        y = bquote(zeta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1)
+  annotation_custom(my_grob9a) +
+  annotation_custom(my_grob9b)
 
 (g9 + g10) / (g11 + g12) +
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/macro_fig5.jpeg", width = 8, height = 6, units = "in")
+ggsave("paper_results/macro_fig6.jpeg", width = 10, height = 10, units = "in")
 
 
 # Explorations statistical patterns ---------------------------------------
@@ -533,26 +531,30 @@ pjuv <- map_dbl(mcmc_sum, function(x) inv.logit(x["gamma[1]",1]))
 
 # Capture probability vs N and R
 tg1 <- ggplot(mapping = aes(x = 1-(1-pad)^4, y = log(spN))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +
+  #geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = "Yearly Adult Capture Probability",
        y = bquote(bar(bar("N"))))
 
 tg2 <- ggplot(mapping = aes(x = 1-(1-pjuv)^4, y = log(spN))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +
+  #geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = "Yearly Juvenile Capture Probability",
        y = bquote(bar(bar("N"))))
 
 tg3 <- ggplot(mapping = aes(x = 1-(1-pad)^4, y = log(spR))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +
+  #geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = "Yearly Adult Capture Probability",
        y = bquote(bar(bar("r"))))
 
 tg4 <- ggplot(mapping = aes(x = 1-(1-pjuv)^4, y = log(spR))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode), size = 2) +
+  #geom_smooth(method="lm", se=F, color = "orange") +
   labs(x = "Yearly Juvenile Capture Probability",
        y = bquote(bar(bar("r"))))
 
@@ -564,37 +566,37 @@ ggsave("paper_results/macro_figS2.jpeg", width = 8, height = 8, units = "in")
 # Patterns when low cp species are removed
 index <- which(1-(1-pjuv)^4 >=0.05)
 
-NvsNpop2 <- cor.jags(data = list(y = cbind(log(spN[index]), log(npop[index])), 
-                                n = length(spN[index])),
-                    inits = inits,
-                    n.chains = 3,
-                    n.adapt = 1000,
-                    n.update = 10000,
-                    n.iter = 5000,
-                    n.thin = 5,
-                    seed_no = 19)
+#NvsNpop2 <- cor.jags(data = list(y = cbind(log(spN[index]), log(npop[index])), 
+                                #n = length(spN[index])),
+                    #inits = inits,
+                    #n.chains = 3,
+                    #n.adapt = 1000,
+                    #n.update = 10000,
+                    #n.iter = 5000,
+                    #n.thin = 5,
+                    #seed_no = 19)
 
-NvsNpop2$mcmc_sum
-rho <- MCMCchains(NvsNpop2$mcmc_samples, params = "rho")
-length(which(rho>0))/length(rho)
+#NvsNpop2$mcmc_sum
+#rho <- MCMCchains(NvsNpop2$mcmc_samples, params = "rho")
+#length(which(rho>0))/length(rho)
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.16" ~ "(-0.42, 0.67)")
-my_grob1 <-  grid.text(my_text1, x=0.7,  y=0.25, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.72")
-my_grob2 <-  grid.text(my_text2, x=0.7,  y=0.15, gp=gpar(col="orange", fontsize=10))
+#my_text1 <- bquote(rho ~ "=" ~ "0.16" ~ "(-0.42, 0.67)")
+#my_grob1 <-  grid.text(my_text1, x=0.7,  y=0.25, gp=gpar(col="orange", fontsize=10))
+#my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.72")
+#my_grob2 <-  grid.text(my_text2, x=0.7,  y=0.15, gp=gpar(col="orange", fontsize=10))
 
-tg5 <- ggplot(mapping = aes(x = log(npop[index]), log(spN[index]))) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
-  labs(x = "Number of Populations",
-       y = bquote(bar(bar("N")))) + 
-  theme(axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 12)) +
-annotation_custom(my_grob1) +
-annotation_custom(my_grob2)
+#tg5 <- ggplot(mapping = aes(x = log(npop[index]), log(spN[index]))) +
+  #geom_point() +
+  #geom_smooth(method="lm", se=F, color = "orange") +
+  #labs(x = "Number of Populations",
+       #y = bquote(bar(bar("N")))) + 
+  #theme(axis.title.x = element_text(size = 10),
+        #axis.title.y = element_text(size = 12)) +
+#annotation_custom(my_grob1) +
+#annotation_custom(my_grob2)
 
-RvsN_sp2 <- cor.jags(data = list(y = cbind(log(spR[index]), log(spN[index])), 
+RvsN_sp2 <- cor.jags(data = list(y = cbind(spR[index], log(spN[index])), 
                                 n = length(spR[index])),
                     inits = inits,
                     n.chains = 3,
@@ -607,22 +609,26 @@ RvsN_sp2 <- cor.jags(data = list(y = cbind(log(spR[index]), log(spN[index])),
 RvsN_sp2$mcmc_sum
 rho <- MCMCchains(RvsN_sp2$mcmc_samples, params = "rho")
 length(which(rho>0))/length(rho)
+correlationBF(log(spN[index]), spR[index], rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.34" ~ "(-0.76, 0.26)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.9, gp=gpar(col="orange", fontsize=10))
-my_text2 <- bquote("P("*rho*">0)" ~ "=" ~ "0.12")
-my_grob2 <-  grid.text(my_text2, x=0.75,  y=0.8, gp=gpar(col="orange", fontsize=10))
+my_text10a <- bquote(rho ~ "=" ~ "-0.34" ~ "(-0.76, 0.26)")
+my_grob10a <-  grid.text(my_text10a, x = 0.10,  y = 0.6, gp = gpar(col="orange", fontsize=10), just = "left")
+my_text10b <- bquote("P("*rho*">0)" ~ "=" ~ "0.11")
+my_grob10b <-  grid.text(my_text10b, x = 0.10,  y = 0.5, gp = gpar(col="orange", fontsize=10), just = "left")
+my_text10c <- bquote(B[0] == 0.96)
+my_grob10c <-  grid.text(my_text10c, x = 0.10, y = 0.4, gp = gpar(col="orange", fontsize = 10), just = "left")
 
 tg6 <- ggplot(mapping = aes(x = log(spN)[index], y = log(spR)[index])) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode[index]), size = 2) +
   labs(x = bquote(bar(bar("N"))),
        y = bquote(bar(bar("r")))) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1) +
-  annotation_custom(my_grob2)
+  annotation_custom(my_grob10a) +
+  annotation_custom(my_grob10b) +
+  annotation_custom(my_grob10c)
 
 NvsB2 <- cor.jags(data = list(y = cbind(log(spN[index]), -beta[index]), 
                              n = length(spN[index])),
@@ -635,19 +641,23 @@ NvsB2 <- cor.jags(data = list(y = cbind(log(spN[index]), -beta[index]),
                  seed_no = 19)
 
 NvsB2$mcmc_sum
+correlationBF(log(spN[index]), -beta[index], rscale = "wide")
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.45" ~ "(-0.82, -0.11)")
-my_grob1 <-  grid.text(my_text1, x=0.25,  y=0.25, gp=gpar(col="orange", fontsize=10))
+my_text11a <- bquote(rho ~ "=" ~ "-0.45" ~ "(-0.82, -0.11)")
+my_grob11a <-  grid.text(my_text11a, x = 0.10,  y = 0.5, gp=gpar(col="orange", fontsize=10), just = "left")
+my_text11b <- bquote(B[0] == 1.8)
+my_grob11b <-  grid.text(my_text11b, x = 0.10, y = 0.4, gp = gpar(col="orange", fontsize = 10), just = "left")
 
 tg7 <- ggplot(mapping = aes(x = log(spN)[index], y = -beta[index])) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode[index]), size = 2) +
   labs(x = bquote(bar(bar("N"))),
        y = bquote(beta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1)
+  annotation_custom(my_grob11a) +
+  annotation_custom(my_grob11b)
 
 RvsB2 <- cor.jags(data = list(y = cbind(log(spR[index]), -beta[index]), 
                              n = length(spR[index])),
@@ -660,77 +670,32 @@ RvsB2 <- cor.jags(data = list(y = cbind(log(spR[index]), -beta[index]),
                  seed_no = 19)
 
 RvsB2$mcmc_sum
-rho <- MCMCchains(RvsB2$mcmc_samples, params = "rho")
-length(which(rho<0))/length(rho)
+correlationBF(spR[index], -beta[index], rscale = "wide")
+
 
 ## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.44" ~ "(-0.12, 0.82)")
-my_grob1 <-  grid.text(my_text1, x=0.75,  y=0.25, gp=gpar(col="orange", fontsize=10))
+my_text12a <- bquote(rho ~ "=" ~ "0.45" ~ "(-0.12, 0.82)")
+my_grob12a <-  grid.text(my_text12a, x = 0.10,  y = 0.5, gp=gpar(col="orange", fontsize=10), just = "left")
+my_text12b <- bquote(B[0] == 1.7)
+my_grob12b <-  grid.text(my_text12b, x = 0.10, y = 0.4, gp = gpar(col="orange", fontsize = 10), just = "left")
 
 tg8 <- ggplot(mapping = aes(x = log(spR)[index], y = -beta[index])) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
+  geom_point(size = 3) +
+  geom_label_repel(aes(label = spcode[index]), size = 2) +
   labs(x = bquote(bar(bar("r"))),
        y = bquote(beta)) + 
   theme(axis.title.x = element_text(size = 10),
         axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1)
+  annotation_custom(my_grob12a) +
+  annotation_custom(my_grob12b)
 
-NvsZ2 <- cor.jags(data = list(y = cbind(log(spN[index]), -zeta[index]), 
-                             n = length(spN[index])),
-                 inits = inits,
-                 n.chains = 3,
-                 n.adapt = 1000,
-                 n.update = 10000,
-                 n.iter = 5000,
-                 n.thin = 5,
-                 seed_no = 19)
-
-NvsZ2$mcmc_sum
-
-## Plot
-my_text1 <- bquote(rho ~ "=" ~ "0.51" ~ "(0.02, 0.85)")
-my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=10))
-
-tg9 <- ggplot(mapping = aes(x = log(spN)[index], y = -zeta[index])) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
-  labs(x = bquote(bar(bar("N"))),
-       y = bquote(zeta)) + 
-  theme(axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1)
-
-RvsZ2 <- cor.jags(data = list(y = cbind(log(spR[index]), -zeta[index]), 
-                             n = length(spR[index])),
-                 inits = inits,
-                 n.chains = 3,
-                 n.adapt = 1000,
-                 n.update = 10000,
-                 n.iter = 5000,
-                 n.thin = 5,
-                 seed_no = 19)
-
-RvsZ2$mcmc_sum
-
-## Plot
-my_text1 <- bquote(rho ~ "=" ~ "-0.14" ~ "(-0.64, 0.43)")
-my_grob1 <-  grid.text(my_text1, x=0.35,  y=0.9, gp=gpar(col="orange", fontsize=10))
-
-tg10 <- ggplot(mapping = aes(x = log(spR[index]), y = -zeta[index])) +
-  geom_point() +
-  geom_smooth(method="lm", se=F, color = "orange") +
-  labs(x = bquote(bar(bar("r"))),
-       y = bquote(zeta)) + 
-  theme(axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 12)) +
-  annotation_custom(my_grob1)
-
-(tg5 + tg6) / (tg7 + tg8) / (tg9 + tg10) +
+(tg6 / tg7 / tg8) +
   plot_annotation(tag_levels = 'a')
 
-ggsave("paper_results/macro_figS3.jpeg", width = 8, height = 8, units = "in")
+ggsave("paper_results/macro_figS3.jpeg", width = 6, height = 10, units = "in")
 
+(sd(spR/spN)/mean(spR/spN))*100
+(sd(spR[index]/spN[index])/mean(spR[index]/spN[index]))*100
 
 # Additional analysis -----------------------------------------------------
 
